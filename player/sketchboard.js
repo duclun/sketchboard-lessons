@@ -26,7 +26,7 @@
   const PER = 0.34; // seconds per spoken word; caption highlight and step length follow it
 
   let svg, defs, world, pencil, pBody, pTip, capEl, playB, scrub, speedB, chapEl, tabs, jsonEl, errEl;
-  let tl = null, cam, pen, windows, colors, chapters, stops, lastT = 0, speed = 1, current = null, lastWin = -1;
+  let tl = null, cam, pen, windows, colors, chapters, stops, lastT = 0, speed = 1, current = null, lastWin = -1, audioEl = null, AUDIO_BASE = "";
   let LESSONS = [];
   let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -149,8 +149,12 @@
 
     (L.steps || []).forEach((st, i) => {
       const t0 = T, words = String(st.say || "").split(/\s+/).filter(Boolean);
+      // Optional per-step narration, stamped by tools/narrate.mjs. When present
+      // the step lasts as long as the recording; otherwise the word estimate.
+      const au = st.audio && typeof st.audio.dur === "number" && st.audio.dur > 0
+        ? { src: st.audio.src, dur: st.audio.dur } : null;
       chapters.push({ title: st.title || `Step ${i + 1}`, t: t0 });
-      windows.push({ t0, words });
+      windows.push({ t0, words, audio: au });
       (st.do || []).forEach(o => {
         const c = col(o.color), w = o.lw || 2.2;
         switch (o.op) {
@@ -167,7 +171,7 @@
           default: console.warn(`Sketchboard: unknown op "${o.op}" in step ${i + 1}; skipped.`);
         }
       });
-      const spoken = t0 + words.length * PER + .35;
+      const spoken = au ? t0 + au.dur + .35 : t0 + words.length * PER + .35;
       T = Math.max(T, spoken) + (st.hold ?? .25);
       // "pause": stop at the end of the step so the student can think, answer, or predict.
       if (st.pause) stops.push(T - .01);
@@ -176,6 +180,9 @@
     tl.to({}, { duration: 0 }, T); // pin the end
     tl.timeScale(speed);
     buildChapters();
+    // Preload the first narrated step so there is no gap when playback starts.
+    const firstAu = windows.find(w => w.audio);
+    if (firstAu && audioEl) { const u = AUDIO_BASE + firstAu.audio.src; audioEl.src = u; audioEl.setAttribute("data-src", u); }
     tick();
   }
 
@@ -215,13 +222,36 @@
       lastWin = wi;
     }
     if (wi >= 0) {
-      const w = windows[wi], idx = Math.floor((t - w.t0) / PER);
+      const w = windows[wi];
+      const idx = w.audio ? Math.floor((t - w.t0) / w.audio.dur * w.words.length)
+                          : Math.floor((t - w.t0) / PER);
       [...capEl.children].forEach((s, j) => { s.className = j < idx ? "said" : j === idx ? "on" : ""; });
     }
     let c = COL.ink;
     for (const k of colors) { if (k.t <= t + 1e-6) c = k.c; else break; }
     pBody.setAttribute("fill", c); pTip.setAttribute("fill", c);
     [...chapEl.children].forEach((li, i) => li.firstChild.classList.toggle("now", i === wi));
+    syncAudio(t, wi);
+  }
+
+  // Keep the narration audio glued to the playhead. Steps without audio leave
+  // the element alone, so mixed lessons (some narrated, some not) just work.
+  // Audio URLs are repo-root-relative in the lesson data; AUDIO_BASE bridges
+  // the page to the root ("" for dist/*.html, "../" for player/index.html).
+  function syncAudio(t, wi) {
+    if (!audioEl) return;
+    const a = wi >= 0 ? windows[wi].audio : null;
+    const want = a ? AUDIO_BASE + a.src : null, cur = audioEl.getAttribute("data-src") || null;
+    if (want !== cur) {
+      audioEl.pause();
+      if (want) { audioEl.src = want; audioEl.setAttribute("data-src", want); }
+      else { audioEl.removeAttribute("src"); audioEl.setAttribute("data-src", ""); }
+    }
+    if (!a) return;
+    const off = Math.min(Math.max(t - windows[wi].t0, 0), a.dur);
+    if (tl.paused()) { if (!audioEl.paused) audioEl.pause(); return; }
+    if (Math.abs(audioEl.currentTime - off) > 0.35) { try { audioEl.currentTime = off; } catch (e) {} }
+    if (audioEl.paused) { audioEl.playbackRate = speed; audioEl.play().catch(() => {}); }
   }
 
   function addTab(L) {
@@ -247,6 +277,8 @@
     svg = $("svg"); defs = svg.querySelector("defs"); world = $("world"); pencil = $("pencil"); pBody = $("pBody"); pTip = $("pTip");
     capEl = $("cap"); playB = $("play"); scrub = $("scrub"); speedB = $("speed"); chapEl = $("chapters");
     tabs = $("tabs"); jsonEl = $("json"); errEl = $("err");
+    audioEl = new Audio(); audioEl.preload = "auto";
+    AUDIO_BASE = opts.audioBase || "";
     LESSONS = (opts.lessons || []).map((L, i) => ({ ...L, id: L.id || "lesson" + (i + 1) }));
     tabs.innerHTML = "";
     LESSONS.forEach(addTab);
@@ -257,7 +289,7 @@
     };
     $("replay").onclick = () => { tl.restart(); playB.textContent = "Pause"; };
     const speeds = [1, .5, 2]; let si = 0;
-    speedB.onclick = () => { si = (si + 1) % 3; speed = speeds[si]; tl.timeScale(speed); speedB.textContent = `Speed ${speed}×`; };
+    speedB.onclick = () => { si = (si + 1) % 3; speed = speeds[si]; tl.timeScale(speed); if (audioEl) audioEl.playbackRate = speed; speedB.textContent = `Speed ${speed}×`; };
     scrub.oninput = () => { tl.pause(); tl.progress(scrub.value / 1000); playB.textContent = "Play"; };
     $("run").onclick = () => {
       try {

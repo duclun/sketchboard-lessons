@@ -28,6 +28,19 @@ const lessons = files.map(f => {
 });
 if (!out) out = path.join(root, "dist", args.length === 1 ? path.basename(args[0], ".json") + ".html" : "sketchboard.html");
 
+// Narration audio ships next to the standalone HTML: copy each referenced
+// file into dist/audio/<id>/ so the step "src" paths stay valid.
+for (const L of lessons) {
+  for (const st of (L.steps || [])) {
+    if (!st.audio || !st.audio.src) continue;
+    const from = path.join(root, st.audio.src);
+    const to = path.join(path.dirname(out), st.audio.src);
+    if (!fs.existsSync(from)) { console.error(`✗ missing audio file ${st.audio.src} (run tools/narrate.mjs)`); process.exit(1); }
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.copyFileSync(from, to);
+  }
+}
+
 const safe = s => s.replace(/<\/(script|style)/gi, "<\\/$1");
 let html = fs.readFileSync(path.join(root, "player/index.html"), "utf8");
 const css = fs.readFileSync(path.join(root, "player/sketchboard.css"), "utf8");

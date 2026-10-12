@@ -84,6 +84,16 @@
           "type": "boolean",
           "description": "Stop at the end of this step until the student presses Continue"
         },
+        "audio": {
+          "type": "object",
+          "description": "Narration recording for this step, stamped by tools/narrate.mjs",
+          "properties": {
+            "src": { "type": "string" },
+            "dur": { "type": "number", "exclusiveMinimum": 0 }
+          },
+          "required": ["src", "dur"],
+          "additionalProperties": false
+        },
         "notes": {
           "type": "string"
         }
