@@ -28,7 +28,7 @@ node tools/narrate.mjs lessons/my-topic.json              # TTS narration per st
 node tools/validate.mjs lessons/my-topic.json             # structure, bounds, pacing, pedagogy warnings
 npm install                                               # once: Playwright + GSAP for the render check
 node tools/check.mjs lessons/my-topic.json                # PNG of the board after every step -> checks/my-topic/
-node tools/build.mjs lessons/my-topic.json                # -> dist/my-topic.html (+ dist/audio/ when narrated)
+node tools/build.mjs lessons/my-topic.json                # -> dist/my-topic.html (audio inlined; --no-inline-audio ships dist/audio/ instead)
 ```
 
 A lesson looks like this:

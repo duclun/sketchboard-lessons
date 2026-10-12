@@ -49,7 +49,7 @@ Machine-readable schema: [`schema/lesson.schema.json`](../schema/lesson.schema.j
 | `do` | `[]` | Actions, drawn **one after another** in array order. |
 | `hold` | `0.25` | Extra seconds of stillness after the step. |
 | `pause` | `false` | When `true`, playback stops at the end of this step and the Play button reads **Continue**. Use it for predict / check-yourself moments. Scrubbing and chapter jumps never trigger it. |
-| `audio` | | `{"src": "audio/<id>/step-01.mp3", "dur": 4.2}` — narration recording for this step, stamped by `tools/narrate.mjs`. When present, the step lasts as long as the recording and the caption highlights words across it. |
+| `audio` | | `{"src": "audio/<id>/step-01.mp3", "dur": 4.2, "hash": "…"}` — narration recording for this step, stamped by `tools/narrate.mjs`. `hash` covers the normalized text, voice and speed; the validator warns when `say` no longer matches it. When present, the step lasts as long as the recording and the caption highlights words across it. |
 | `notes` | | Ignored. |
 
 ### Step timing

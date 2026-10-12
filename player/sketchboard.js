@@ -182,7 +182,7 @@
     buildChapters();
     // Preload the first narrated step so there is no gap when playback starts.
     const firstAu = windows.find(w => w.audio);
-    if (firstAu && audioEl) { const u = AUDIO_BASE + firstAu.audio.src; audioEl.src = u; audioEl.setAttribute("data-src", u); }
+    if (firstAu && audioEl) { const u = audioURL(firstAu.audio); audioEl.src = u; audioEl.setAttribute("data-src", u); }
     tick();
   }
 
@@ -192,7 +192,7 @@
       const li = document.createElement("li"), b = document.createElement("button");
       const n = document.createElement("small"); n.textContent = i + 1;
       b.append(n, document.createTextNode(c.title));
-      b.onclick = () => { tl.time(c.t + .001); if (tl.paused()) playB.textContent = "Play"; };
+      b.onclick = () => { tl.time(c.t + .001); if (tl.paused()) playB.textContent = "Play"; syncAudioNow(); };
       li.appendChild(b); chapEl.appendChild(li);
     });
   }
@@ -238,10 +238,12 @@
   // the element alone, so mixed lessons (some narrated, some not) just work.
   // Audio URLs are repo-root-relative in the lesson data; AUDIO_BASE bridges
   // the page to the root ("" for dist/*.html, "../" for player/index.html).
+  // data: URIs (inlined by build.mjs --inline-audio) are used as-is.
+  function audioURL(a) { return a.src.startsWith("data:") ? a.src : AUDIO_BASE + a.src; }
   function syncAudio(t, wi) {
     if (!audioEl) return;
     const a = wi >= 0 ? windows[wi].audio : null;
-    const want = a ? AUDIO_BASE + a.src : null, cur = audioEl.getAttribute("data-src") || null;
+    const want = a ? audioURL(a) : null, cur = audioEl.getAttribute("data-src") || null;
     if (want !== cur) {
       audioEl.pause();
       if (want) { audioEl.src = want; audioEl.setAttribute("data-src", want); }
@@ -249,10 +251,21 @@
     }
     if (!a) return;
     const off = Math.min(Math.max(t - windows[wi].t0, 0), a.dur);
-    if (tl.paused()) { if (!audioEl.paused) audioEl.pause(); return; }
+    // Paused, or sitting in the tail after the clip ended: never call play()
+    // on an ended element (per spec it seeks to 0 and replays the first
+    // syllable as a blip).
+    if (tl.paused() || off >= a.dur - 0.05 || audioEl.ended) {
+      if (!audioEl.paused) audioEl.pause();
+      return;
+    }
     if (Math.abs(audioEl.currentTime - off) > 0.35) { try { audioEl.currentTime = off; } catch (e) {} }
     if (audioEl.paused) { audioEl.playbackRate = speed; audioEl.play().catch(() => {}); }
   }
+  // UI handlers that don't move the playhead (pause button, replay) never
+  // trigger GSAP's onUpdate, so sync the audio explicitly there. Calling
+  // play() inside the click handler also satisfies iOS Safari's user-gesture
+  // requirement for audio.
+  function syncAudioNow() { if (tl) syncAudio(tl.time(), lastWin); }
 
   function addTab(L) {
     const b = document.createElement("button");
@@ -286,8 +299,9 @@
     playB.onclick = () => {
       if (tl.progress() === 1) tl.restart(); else tl.paused(!tl.paused());
       playB.textContent = tl.paused() ? "Play" : "Pause";
+      syncAudioNow();
     };
-    $("replay").onclick = () => { tl.restart(); playB.textContent = "Pause"; };
+    $("replay").onclick = () => { tl.restart(); playB.textContent = "Pause"; syncAudioNow(); };
     const speeds = [1, .5, 2]; let si = 0;
     speedB.onclick = () => { si = (si + 1) % 3; speed = speeds[si]; tl.timeScale(speed); if (audioEl) audioEl.playbackRate = speed; speedB.textContent = `Speed ${speed}×`; };
     scrub.oninput = () => { tl.pause(); tl.progress(scrub.value / 1000); playB.textContent = "Play"; };

@@ -55,6 +55,19 @@
       "items": {
         "$ref": "#/$defs/step"
       }
+    },
+    "narration": {
+      "type": "object",
+      "description": "How the lesson was narrated, stamped by tools/narrate.mjs",
+      "properties": {
+        "voice": {
+          "type": "string"
+        },
+        "speed": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "$defs": {
@@ -88,10 +101,22 @@
           "type": "object",
           "description": "Narration recording for this step, stamped by tools/narrate.mjs",
           "properties": {
-            "src": { "type": "string" },
-            "dur": { "type": "number", "exclusiveMinimum": 0 }
+            "src": {
+              "type": "string"
+            },
+            "dur": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "hash": {
+              "type": "string",
+              "description": "sha256 of normalized text|voice|speed; re-narrate when it mismatches"
+            }
           },
-          "required": ["src", "dur"],
+          "required": [
+            "src",
+            "dur"
+          ],
           "additionalProperties": false
         },
         "notes": {
