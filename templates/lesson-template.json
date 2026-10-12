@@ -1,0 +1,50 @@
+{
+  "id": "topic-name",
+  "title": "Topic name",
+  "meta": {"subject":"","grade":"9","objective":"After this lesson the student can ...","vocabulary":[],"prerequisites":[],"misconceptions":[]},
+  "steps": [
+    {
+      "title": "Hook",
+      "say": "Connect to something the student already knows, while the title and one concrete drawing appear.",
+      "do": [
+        {"op":"text","t":"TOPIC NAME","x":200,"y":44,"size":19,"color":"blue"}
+      ]
+    },
+    {
+      "title": "Part one",
+      "say": "Introduce the first part by name, in its own color, as it is drawn.",
+      "do": []
+    },
+    {
+      "title": "Part two",
+      "say": "Introduce the second part the same way.",
+      "do": []
+    },
+    {
+      "title": "The idea",
+      "say": "State the rule in plain words. Then show it as notation.",
+      "do": []
+    },
+    {
+      "title": "Your turn",
+      "say": "Ask the student to predict the next result. Pause and work it out before you continue.",
+      "pause": true,
+      "do": [
+        {"op":"text","t":"? = ?","x":200,"y":440,"size":24,"font":"hand","color":"blue"}
+      ]
+    },
+    {
+      "title": "The answer",
+      "say": "Reveal the answer and say why in one sentence.",
+      "do": []
+    },
+    {
+      "title": "Remember",
+      "say": "One short sentence that restates the takeaway.",
+      "do": [
+        {"op":"text","t":"THE RULE","x":200,"y":486,"size":26,"color":"blue"}
+      ],
+      "hold": 0.8
+    }
+  ]
+}

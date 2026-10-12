@@ -1,0 +1,93 @@
+{
+  "id": "slope-of-a-line",
+  "title": "Slope of a line",
+  "meta": {"subject":"Algebra","grade":"9","objective":"Find the slope of a line from two points as rise over run, and connect a bigger slope to a steeper line.","vocabulary":["slope","rise","run","coordinate"],"prerequisites":["plotting points (x, y)","dividing whole numbers"],"misconceptions":["slope is the length of the line","run is counted vertically"]},
+  "steps": [
+    {
+      "title": "A grid",
+      "say": "Here is a coordinate grid. The x axis goes right, and the y axis goes up.",
+      "do": [
+        {"op":"text","t":"SLOPE OF A LINE","x":200,"y":44,"size":19,"color":"blue"},
+        {"op":"line","x1":60,"y1":380,"x2":362,"y2":380},
+        {"op":"poly","pts":[[352,374],[362,380],[352,386]]},
+        {"op":"line","x1":80,"y1":400,"x2":80,"y2":88},
+        {"op":"poly","pts":[[74,98],[80,88],[86,98]]},
+        {"op":"text","t":"x","x":372,"y":396,"size":14,"font":"mono"},
+        {"op":"text","t":"y","x":80,"y":78,"size":14,"font":"mono"}
+      ]
+    },
+    {
+      "title": "Two points",
+      "say": "Plot two points. A is at two, one. B is at eight, four.",
+      "do": [
+        {"op":"circle","cx":140,"cy":350,"r":4},
+        {"op":"fill","of":"circle","cx":140,"cy":350,"r":4,"color":"ink","a":0.9},
+        {"op":"text","t":"A (2, 1)","x":148,"y":368,"size":11,"anchor":"start","font":"mono"},
+        {"op":"circle","cx":320,"cy":260,"r":4},
+        {"op":"fill","of":"circle","cx":320,"cy":260,"r":4,"color":"ink","a":0.9},
+        {"op":"text","t":"B (8, 4)","x":312,"y":248,"size":11,"anchor":"end","font":"mono"}
+      ]
+    },
+    {
+      "title": "The line",
+      "say": "Draw the line through A and B. Slope tells us how steep this line is.",
+      "do": [
+        {"op":"line","x1":96,"y1":372,"x2":352,"y2":244,"color":"blue","lw":2.6}
+      ]
+    },
+    {
+      "title": "Run",
+      "say": "Start at A and walk right until you are under B. That sideways distance is the run. The run is six.",
+      "do": [
+        {"op":"line","x1":140,"y1":350,"x2":320,"y2":350,"color":"orange","lw":2.4},
+        {"op":"text","t":"run = 6","x":230,"y":342,"size":12,"font":"mono","color":"orange"}
+      ]
+    },
+    {
+      "title": "Rise",
+      "say": "Now climb straight up to B. That upward distance is the rise. The rise is three.",
+      "do": [
+        {"op":"line","x1":320,"y1":350,"x2":320,"y2":260,"color":"green","lw":2.4},
+        {"op":"text","t":"rise = 3","x":328,"y":310,"size":12,"anchor":"start","font":"mono","color":"green"}
+      ]
+    },
+    {
+      "title": "Rise over run",
+      "say": "Slope is the rise divided by the run.",
+      "do": [
+        {"op":"text","t":"SLOPE = RISE / RUN","x":200,"y":432,"size":18}
+      ]
+    },
+    {
+      "title": "Your turn",
+      "say": "So what is three divided by six? Pause and work out the slope before you continue.",
+      "pause": true,
+      "do": [
+        {"op":"text","t":"3 ÷ 6 = ?","x":200,"y":474,"size":26,"font":"hand","color":"blue"}
+      ]
+    },
+    {
+      "title": "One half",
+      "say": "Three divided by six is one half. The line goes up one for every two steps to the right.",
+      "do": [
+        {"op":"text","t":"slope = ½","x":322,"y":474,"size":24,"font":"hand","color":"green"}
+      ]
+    },
+    {
+      "title": "Steeper lines",
+      "say": "A bigger slope means a steeper line. Slope two climbs four times faster than slope one half.",
+      "do": [
+        {"op":"clear"},
+        {"op":"text","t":"BIGGER SLOPE = STEEPER","x":200,"y":44,"size":18,"color":"blue"},
+        {"op":"line","x1":70,"y1":400,"x2":350,"y2":400},
+        {"op":"line","x1":90,"y1":420,"x2":90,"y2":90},
+        {"op":"line","x1":90,"y1":400,"x2":240,"y2":100,"color":"red","lw":2.6},
+        {"op":"text","t":"slope 2","x":250,"y":112,"size":13,"anchor":"start","font":"mono","color":"red"},
+        {"op":"line","x1":90,"y1":400,"x2":350,"y2":270,"color":"blue","lw":2.6},
+        {"op":"text","t":"slope ½","x":350,"y":258,"size":13,"anchor":"end","font":"mono","color":"blue"},
+        {"op":"text","t":"slope = rise ÷ run","x":200,"y":462,"size":26,"font":"hand"}
+      ],
+      "hold": 0.8
+    }
+  ]
+}

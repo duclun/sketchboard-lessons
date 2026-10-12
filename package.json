@@ -1,0 +1,18 @@
+{
+  "name": "sketchboard-lessons",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pencil-sketch animated lessons from JSON: an SVG + GSAP player and an agent skill for teaching concepts.",
+  "type": "module",
+  "scripts": {
+    "validate": "node tools/validate.mjs lessons/*.json",
+    "build": "node tools/build.mjs && for f in lessons/*-*.json; do node tools/build.mjs \"$f\"; done",
+    "check": "node tools/check.mjs",
+    "format": "node tools/format.mjs lessons/*-*.json",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "gsap": "3.12.5",
+    "playwright": "^1.56.1"
+  }
+}

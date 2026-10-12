@@ -1,0 +1,85 @@
+{
+  "id": "pythagorean-theorem",
+  "title": "Pythagorean theorem",
+  "meta": {"subject":"Geometry","grade":"9","objective":"Explain why a² + b² = c² for a right triangle and use it to find a missing side.","vocabulary":["right angle","leg","hypotenuse","square","area"],"prerequisites":["area of a square","squaring a number"]},
+  "steps": [
+    {
+      "title": "A right triangle",
+      "say": "Start with a right triangle. One corner is exactly ninety degrees.",
+      "do": [
+        {"op":"text","t":"PYTHAGOREAN THEOREM","x":200,"y":44,"size":19,"color":"blue"},
+        {"op":"poly","pts":[[110,300],[230,300],[110,210]],"close":true},
+        {"op":"poly","pts":[[110,288],[122,288],[122,300]],"lw":1.6},
+        {"op":"text","t":"90°","x":140,"y":293,"size":10,"font":"mono"}
+      ]
+    },
+    {
+      "title": "The legs",
+      "say": "The two shorter sides are called the legs. We name them a and b.",
+      "do": [
+        {"op":"text","t":"a","x":95,"y":262,"size":20,"color":"blue"},
+        {"op":"text","t":"b","x":170,"y":322,"size":20,"color":"orange"}
+      ]
+    },
+    {
+      "title": "The hypotenuse",
+      "say": "The longest side, across from the right angle, is the hypotenuse. We call it c.",
+      "do": [
+        {"op":"text","t":"c","x":182,"y":240,"size":20,"color":"green"}
+      ]
+    },
+    {
+      "title": "Squares on each side",
+      "say": "Now build a square on each side of the triangle.",
+      "do": [
+        {"op":"rect","x":20,"y":210,"w":90,"h":90,"color":"blue"},
+        {"op":"rect","x":110,"y":300,"w":120,"h":120,"color":"orange"},
+        {"op":"poly","pts":[[110,210],[230,300],[320,180],[200,90]],"close":true,"color":"green"}
+      ]
+    },
+    {
+      "title": "Compare the areas",
+      "say": "Color them in. The two small squares together cover exactly as much area as the big one.",
+      "do": [
+        {"op":"fill","of":"rect","x":20,"y":210,"w":90,"h":90,"color":"blue"},
+        {"op":"fill","of":"rect","x":110,"y":300,"w":120,"h":120,"color":"orange"},
+        {"op":"fill","of":"poly","pts":[[110,210],[230,300],[320,180],[200,90]],"close":true,"color":"green"},
+        {"op":"text","t":"a²","x":65,"y":262,"size":22,"color":"ink"},
+        {"op":"text","t":"b²","x":170,"y":368,"size":22,"color":"ink"},
+        {"op":"text","t":"c²","x":215,"y":200,"size":22,"color":"ink"}
+      ]
+    },
+    {
+      "title": "Try 3 and 4",
+      "say": "Try a triangle with legs of three and four. Three squared is nine. Four squared is sixteen.",
+      "do": [
+        {"op":"text","t":"3 × 3 = 9","x":65,"y":280,"size":9,"font":"mono"},
+        {"op":"text","t":"4 × 4 = 16","x":170,"y":388,"size":11,"font":"mono"}
+      ]
+    },
+    {
+      "title": "Your turn",
+      "say": "Before we add them, predict: how long is side c? Pause and think.",
+      "pause": true,
+      "do": [
+        {"op":"text","t":"c = ?","x":325,"y":275,"size":20,"font":"hand","color":"green"}
+      ]
+    },
+    {
+      "title": "Add them up",
+      "say": "Nine plus sixteen is twenty-five. So the big square is twenty-five, and its side c is five.",
+      "do": [
+        {"op":"text","t":"9 + 16 = 25","x":200,"y":458,"size":22,"color":"ink"},
+        {"op":"text","t":"c = √25 = 5","x":215,"y":222,"size":10,"font":"mono"}
+      ]
+    },
+    {
+      "title": "The rule",
+      "say": "That is the Pythagorean theorem. a squared plus b squared equals c squared.",
+      "hold": 0.8,
+      "do": [
+        {"op":"text","t":"a² + b² = c²","x":200,"y":490,"size":28,"color":"blue"}
+      ]
+    }
+  ]
+}

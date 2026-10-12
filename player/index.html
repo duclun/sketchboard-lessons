@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sketchboard Lessons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;700&family=Caveat:wght@500&display=swap">
+<link rel="stylesheet" href="sketchboard.css"><!--inline:sketchboard.css-->
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Sketchboard</h1>
+    <div class="tabs" id="tabs" role="group" aria-label="Lessons"></div>
+  </header>
+  <div class="main">
+    <div class="stage" id="stageBox">
+      <svg id="svg" viewBox="0 0 400 500" role="img" aria-label="Lesson drawing">
+        <defs>
+          <filter id="paperTex"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .05 0"/></filter>
+          <filter id="wobble"><feTurbulence type="turbulence" baseFrequency=".035" numOctaves="2" seed="2"/><feDisplacementMap in="SourceGraphic" scale="1.2"/></filter>
+          <filter id="shadow"><feDropShadow dx="3" dy="5" stdDeviation="2.5" flood-opacity=".22"/></filter>
+        </defs>
+        <rect width="400" height="500" fill="#f7f5f0"/>
+        <rect width="400" height="500" filter="url(#paperTex)"/>
+        <g id="world" filter="url(#wobble)"></g>
+        <g id="pencil" filter="url(#shadow)">
+          <g transform="rotate(-38)">
+            <polygon points="0,0 7,-4 7,4" fill="#e8c9a0"/>
+            <polygon points="0,0 2.6,-1.5 2.6,1.5" id="pTip" fill="#222"/>
+            <rect x="7" y="-4" width="62" height="8" id="pBody" fill="#2a2a2a"/>
+            <rect x="7" y="-4" width="62" height="2.6" fill="#fff" opacity=".18"/>
+            <rect x="69" y="-4" width="8" height="8" fill="#b9b9b9"/>
+            <rect x="77" y="-4" width="7" height="8" rx="2" fill="#e88"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="side">
+      <div class="cap" id="cap" aria-live="polite"></div>
+      <div class="bar">
+        <button id="play">Pause</button>
+        <button id="replay">Replay</button>
+        <button id="speed">Speed 1×</button>
+      </div>
+      <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Scrub lesson timeline">
+      <ol class="chapters" id="chapters"></ol>
+    </div>
+  </div>
+  <details id="editor">
+    <summary>Lesson as data: edit and run your own</summary>
+    <div class="edit">
+      <div>
+        <textarea id="json" spellcheck="false" aria-label="Lesson JSON"></textarea>
+        <div class="bar" style="margin-top:8px"><button id="run">Run this lesson</button><button id="reset">Reset</button></div>
+        <div class="err" id="err" role="alert"></div>
+      </div>
+      <div class="ref">
+        <p class="note">A lesson is <code>{title, steps:[{title, say, do:[…]}]}</code> on a 400×500 board. Each step speaks its <code>say</code> line while its <code>do</code> list is drawn in order. Colors: <code>ink blue orange green red yellow brown purple teal grey soft paper</code> or any hex.</p>
+        <p><code>{op:"line", x1,y1,x2,y2}</code><br>
+        <code>{op:"poly", pts:[[x,y],…], close:true}</code><br>
+        <code>{op:"rect", x,y,w,h}</code> · <code>{op:"circle", cx,cy,r}</code><br>
+        <code>{op:"path", d:"M…"}</code> any SVG path<br>
+        <code>{op:"text", t, x,y, size, anchor, font:"display|mono|hand"}</code><br>
+        <code>{op:"fill", of:"rect|poly|circle", …same keys, color, a:0.55}</code> scribble-colors a shape<br>
+        <code>{op:"cam", x,y,s}</code> pan and zoom to a point<br>
+        <code>{op:"clear"}</code> wipe the page · <code>{op:"hold", s:1}</code> pause</p>
+        <p class="note">Every drawing op also takes <code>color</code>, <code>lw</code> (line weight) and <code>dur</code> (seconds). A step with <code>pause:true</code> stops at its end until the student presses Continue.</p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="sketchboard.js"></script><!--inline:sketchboard.js-->
+<!--lessons-->
+<script>
+// Lesson sources, in priority order:
+//  1. window.SKETCHBOARD_LESSONS (inlined by tools/build.mjs into a standalone file)
+//  2. ?src=path/to/lesson.json  (one lesson; needs http(s), not file://)
+//  3. ../lessons/index.json manifest (needs http(s): run `npx serve .` or `python3 -m http.server` at the repo root)
+(async () => {
+  let lessons = window.SKETCHBOARD_LESSONS;
+  if (!lessons) {
+    const q = new URLSearchParams(location.search);
+    try {
+      if (q.get("src")) lessons = [await (await fetch(q.get("src"))).json()];
+      else {
+        const files = await (await fetch("../lessons/index.json")).json();
+        lessons = await Promise.all(files.map(f => fetch("../lessons/" + f).then(r => r.json())));
+      }
+    } catch (e) {
+      lessons = [];
+      console.warn("Could not fetch lessons. Serve the repo over http, or open dist/sketchboard.html.", e);
+    }
+  }
+  Sketchboard.init({ lessons });
+})();
+</script>
+</body>
+</html>

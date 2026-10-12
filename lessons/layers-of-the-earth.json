@@ -1,0 +1,85 @@
+{
+  "id": "layers-of-the-earth",
+  "title": "Layers of the Earth",
+  "meta": {"subject":"Earth science","grade":"9","objective":"Name Earth's four layers in order and describe each one's state and temperature.","vocabulary":["crust","mantle","outer core","inner core"],"prerequisites":["solid vs liquid"]},
+  "steps": [
+    {
+      "title": "Earth has layers",
+      "say": "The Earth is not solid rock all the way through. It is built in layers, like a peach.",
+      "do": [
+        {"op":"text","t":"LAYERS OF THE EARTH","x":200,"y":44,"size":19,"color":"blue"},
+        {"op":"circle","cx":115,"cy":275,"r":110}
+      ]
+    },
+    {
+      "title": "Crust",
+      "say": "The crust is the thin, cool skin on the outside. It is where we live.",
+      "do": [
+        {"op":"fill","of":"circle","cx":115,"cy":275,"r":110,"color":"brown","a":0.7},
+        {"op":"line","x1":194.7,"y1":208.2,"x2":226,"y2":165,"lw":1.4},
+        {"op":"text","t":"CRUST","x":232,"y":170,"size":15,"anchor":"start","color":"brown"},
+        {"op":"text","t":"5 to 70 km thick","x":232,"y":185,"size":9,"anchor":"start","font":"mono"}
+      ]
+    },
+    {
+      "title": "Mantle",
+      "say": "Under it is the mantle, a thick layer of hot rock that flows very slowly.",
+      "do": [
+        {"op":"circle","cx":115,"cy":275,"r":98},
+        {"op":"fill","of":"circle","cx":115,"cy":275,"r":98,"color":"orange","a":0.7},
+        {"op":"line","x1":192.3,"y1":254.3,"x2":226,"y2":233,"lw":1.4},
+        {"op":"text","t":"MANTLE","x":232,"y":238,"size":15,"anchor":"start","color":"orange"},
+        {"op":"text","t":"2,900 km of hot rock","x":232,"y":253,"size":9,"anchor":"start","font":"mono"}
+      ]
+    },
+    {
+      "title": "Outer core",
+      "say": "Deeper still is the outer core. It is made of liquid metal, mostly iron.",
+      "do": [
+        {"op":"circle","cx":115,"cy":275,"r":62},
+        {"op":"fill","of":"circle","cx":115,"cy":275,"r":62,"color":"yellow","a":0.8},
+        {"op":"line","x1":161.3,"y1":283.2,"x2":226,"y2":301,"lw":1.4},
+        {"op":"text","t":"OUTER CORE","x":232,"y":306,"size":15,"anchor":"start","color":"yellow"},
+        {"op":"text","t":"liquid iron, 4,500°C","x":232,"y":321,"size":9,"anchor":"start","font":"mono"}
+      ]
+    },
+    {
+      "title": "Inner core",
+      "say": "The inner core is solid iron. The pressure is so high that it cannot melt.",
+      "do": [
+        {"op":"circle","cx":115,"cy":275,"r":32},
+        {"op":"fill","of":"circle","cx":115,"cy":275,"r":32,"color":"red","a":0.85},
+        {"op":"line","x1":129.7,"y1":285.3,"x2":226,"y2":369,"lw":1.4},
+        {"op":"text","t":"INNER CORE","x":232,"y":374,"size":15,"anchor":"start","color":"red"},
+        {"op":"text","t":"solid iron, 5,200°C","x":232,"y":389,"size":9,"anchor":"start","font":"mono"}
+      ]
+    },
+    {
+      "title": "Hotter with depth",
+      "say": "The deeper you go, the hotter it gets. The center is about as hot as the surface of the Sun.",
+      "do": [
+        {"op":"cam","x":115,"y":275,"s":2.4,"dur":1.2},
+        {"op":"text","t":"5,200°C","x":115,"y":278,"size":9,"color":"paper"},
+        {"op":"hold","s":0.6}
+      ]
+    },
+    {
+      "title": "Check yourself",
+      "say": "Quick check. Which layer is made of liquid metal? Pause and answer before you go on.",
+      "pause": true,
+      "do": [
+        {"op":"cam","x":200,"y":250,"s":1,"dur":1.1},
+        {"op":"text","t":"Which layer is liquid?","x":200,"y":440,"size":20,"font":"hand","color":"blue"}
+      ]
+    },
+    {
+      "title": "Remember",
+      "say": "It is the outer core. Crust, mantle, outer core, inner core. Thin, thick, liquid, solid.",
+      "hold": 0.8,
+      "do": [
+        {"op":"line","x1":230,"y1":309,"x2":326,"y2":309,"color":"blue","lw":2.6},
+        {"op":"text","t":"thin · thick · liquid · solid","x":200,"y":470,"size":12,"font":"mono"}
+      ]
+    }
+  ]
+}
