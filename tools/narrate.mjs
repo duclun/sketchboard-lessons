@@ -4,11 +4,13 @@
 // Usage:
 //   node tools/narrate.mjs lessons/my-lesson.json [--voice ID] [--speed N] [--force]
 //
-// For every step with a non-empty "say", writes audio/<id>/step-NN.mp3,
+// For every step with a non-empty "say", writes audio/<id>/step-NN-<hash>.mp3,
 // measures its duration, and stamps "audio": {"src", "dur", "hash"} onto the
-// step. The hash covers the normalized text, voice and speed, so a re-run
-// regenerates a step whose "say" changed (or was reordered) instead of
-// silently reusing a stale recording. Steps without narration are skipped.
+// step. The hash covers the normalized text, voice and speed and is part of
+// the file name, so a file can only ever hold the text its name says: an
+// edited step is re-synthesized, and a moved step reuses its own recording
+// under its new number. Recordings no step refers to any more are removed.
+// Steps without narration are skipped.
 // The lesson file is rewritten with the canonical formatting from
 // tools/format.mjs.
 //
@@ -23,7 +25,7 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { formatLesson } from "./format.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -99,30 +101,40 @@ function main() {
   fs.mkdirSync(outDir, { recursive: true });
 
   let done = 0, skipped = 0;
+  const keep = new Set();
   L.steps.forEach((st, i) => {
     const words = String(st.say || "").split(/\s+/).filter(Boolean);
     if (!words.length) { console.log(`  step ${i + 1}: no "say", skipped`); skipped++; return; }
     const norm = normalize(st.say);
     const hash = hashOf(norm, voice, speed);
     const nn = String(i + 1).padStart(2, "0");
-    const out = path.join(outDir, `step-${nn}.mp3`);
-    // Regenerate when forced, when the file is missing, or when the recorded
-    // text/voice/speed no longer matches the hash (edited or reordered steps).
-    const stale = !st.audio || st.audio.hash !== hash;
-    if (fs.existsSync(out) && !force && !stale) {
+    const name = `step-${nn}-${hash}.mp3`;
+    const out = path.join(outDir, name);
+    if (fs.existsSync(out) && !force) {
       console.log(`  step ${i + 1}: up to date, skipped`);
     } else {
-      if (stale && fs.existsSync(out) && !force)
-        console.log(`  step ${i + 1}: text/voice/speed changed, re-synthesizing`);
-      execFileSync(tts,
-        ["speak", "--voice", voice, "--speed", String(speed), "--format", "mp3", "--output", out, "--text-stdin"],
-        { input: norm, stdio: ["pipe", "pipe", "pipe"] });
-      console.log(`  step ${i + 1}: synthesized ${(fs.statSync(out).size / 1024).toFixed(0)} KB`);
+      // Same text/voice/speed recorded under another step number (steps were
+      // reordered or inserted): reuse it instead of calling the TTS again.
+      const prior = force ? null : fs.readdirSync(outDir).find(f => f.endsWith(`-${hash}.mp3`));
+      if (prior) {
+        fs.copyFileSync(path.join(outDir, prior), out);
+        console.log(`  step ${i + 1}: moved, reused ${prior}`);
+      } else {
+        execFileSync(tts,
+          ["speak", "--voice", voice, "--speed", String(speed), "--format", "mp3", "--output", out, "--text-stdin"],
+          { input: norm, stdio: ["pipe", "pipe", "pipe"] });
+        console.log(`  step ${i + 1}: synthesized ${(fs.statSync(out).size / 1024).toFixed(0)} KB`);
+      }
     }
+    keep.add(name);
     const dur = measure(out, words.length);
-    st.audio = { src: `audio/${L.id}/step-${nn}.mp3`, dur, hash };
+    st.audio = { src: `audio/${L.id}/${name}`, dur, hash };
     done++;
   });
+
+  // Drop recordings no step uses any more (old text, old numbering).
+  for (const f of fs.readdirSync(outDir))
+    if (/^step-\d+(-[0-9a-f]{12})?\.mp3$/.test(f) && !keep.has(f)) fs.unlinkSync(path.join(outDir, f));
 
   L.narration = { voice, speed };
   fs.writeFileSync(lessonPath, formatLesson(L));
@@ -130,4 +142,6 @@ function main() {
   console.log("run tools/format.mjs if you hand-edited the file afterwards, then tools/validate.mjs.");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+// Run as a CLI only, not when imported by validate.mjs. Compare URLs, not a
+// hand-built "file://" string: paths with spaces are percent-encoded in URLs.
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) main();

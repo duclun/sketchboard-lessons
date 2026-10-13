@@ -24,7 +24,7 @@ Open the "Lesson as data" panel under the player to edit a lesson's JSON and re-
 ```bash
 cp templates/lesson-template.json lessons/my-topic.json   # or write a generator in scripts/
 # ...edit...
-node tools/narrate.mjs lessons/my-topic.json              # TTS narration per step -> audio/my-topic/step-NN.mp3
+node tools/narrate.mjs lessons/my-topic.json              # TTS narration per step -> audio/my-topic/step-NN-<hash>.mp3
 node tools/validate.mjs lessons/my-topic.json             # structure, bounds, pacing, pedagogy warnings
 npm install                                               # once: Playwright + GSAP for the render check
 node tools/check.mjs lessons/my-topic.json                # PNG of the board after every step -> checks/my-topic/

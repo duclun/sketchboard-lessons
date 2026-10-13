@@ -61,7 +61,7 @@ export function validate(L) {
     let audioDur = 0;
     if (st.audio !== undefined) {
       if (!st.audio || typeof st.audio !== "object" || typeof st.audio.src !== "string" || !st.audio.src)
-        err(w, '"audio" must look like {"src": "audio/<id>/step-01.mp3", "dur": 4.2}; run tools/narrate.mjs');
+        err(w, '"audio" must look like {"src": "audio/<id>/step-01-<hash>.mp3", "dur": 4.2}; run tools/narrate.mjs');
       else if (!(typeof st.audio.dur === "number" && st.audio.dur > 0))
         err(w, '"audio.dur" must be a positive number of seconds; run tools/narrate.mjs to stamp it');
       else {
@@ -73,6 +73,8 @@ export function validate(L) {
           const want = hashOf(normalize(st.say || ""), L.narration.voice, L.narration.speed);
           if (st.audio.hash !== want)
             warn(w, `"say" changed since this step was narrated; re-run tools/narrate.mjs`);
+          else if (!st.audio.src.startsWith("data:") && !st.audio.src.endsWith(`-${st.audio.hash}.mp3`))
+            warn(w, `audio file "${st.audio.src}" is not the recording for this step's hash; re-run tools/narrate.mjs`);
         } else if (st.audio.hash !== undefined && typeof st.audio.hash !== "string") {
           err(w, '"audio.hash" must be a string; run tools/narrate.mjs to stamp it');
         }
