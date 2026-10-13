@@ -145,7 +145,7 @@ p.note{margin:0;font-size:12px;color:var(--muted)}
   const PER = 0.34; // seconds per spoken word; caption highlight and step length follow it
 
   let svg, defs, world, pencil, pBody, pTip, capEl, playB, scrub, speedB, chapEl, tabs, jsonEl, errEl;
-  let tl = null, cam, pen, windows, colors, chapters, stops, lastT = 0, speed = 1, current = null, lastWin = -1;
+  let tl = null, cam, pen, windows, colors, chapters, stops, lastT = 0, speed = 1, current = null, lastWin = -1, audioEl = null, AUDIO_BASE = "";
   let LESSONS = [];
   let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -268,8 +268,12 @@ p.note{margin:0;font-size:12px;color:var(--muted)}
 
     (L.steps || []).forEach((st, i) => {
       const t0 = T, words = String(st.say || "").split(/\s+/).filter(Boolean);
+      // Optional per-step narration, stamped by tools/narrate.mjs. When present
+      // the step lasts as long as the recording; otherwise the word estimate.
+      const au = st.audio && typeof st.audio.dur === "number" && st.audio.dur > 0
+        ? { src: st.audio.src, dur: st.audio.dur } : null;
       chapters.push({ title: st.title || `Step ${i + 1}`, t: t0 });
-      windows.push({ t0, words });
+      windows.push({ t0, words, audio: au });
       (st.do || []).forEach(o => {
         const c = col(o.color), w = o.lw || 2.2;
         switch (o.op) {
@@ -286,7 +290,7 @@ p.note{margin:0;font-size:12px;color:var(--muted)}
           default: console.warn(`Sketchboard: unknown op "${o.op}" in step ${i + 1}; skipped.`);
         }
       });
-      const spoken = t0 + words.length * PER + .35;
+      const spoken = au ? t0 + au.dur + .35 : t0 + words.length * PER + .35;
       T = Math.max(T, spoken) + (st.hold ?? .25);
       // "pause": stop at the end of the step so the student can think, answer, or predict.
       if (st.pause) stops.push(T - .01);
@@ -295,6 +299,9 @@ p.note{margin:0;font-size:12px;color:var(--muted)}
     tl.to({}, { duration: 0 }, T); // pin the end
     tl.timeScale(speed);
     buildChapters();
+    // Preload the first narrated step so there is no gap when playback starts.
+    const firstAu = windows.find(w => w.audio);
+    if (firstAu && audioEl) { const u = audioURL(firstAu.audio); audioEl.src = u; audioEl.setAttribute("data-src", u); }
     tick();
   }
 
@@ -304,7 +311,7 @@ p.note{margin:0;font-size:12px;color:var(--muted)}
       const li = document.createElement("li"), b = document.createElement("button");
       const n = document.createElement("small"); n.textContent = i + 1;
       b.append(n, document.createTextNode(c.title));
-      b.onclick = () => { tl.time(c.t + .001); if (tl.paused()) playB.textContent = "Play"; };
+      b.onclick = () => { tl.time(c.t + .001); if (tl.paused()) playB.textContent = "Play"; syncAudioNow(); };
       li.appendChild(b); chapEl.appendChild(li);
     });
   }
@@ -334,14 +341,54 @@ p.note{margin:0;font-size:12px;color:var(--muted)}
       lastWin = wi;
     }
     if (wi >= 0) {
-      const w = windows[wi], idx = Math.floor((t - w.t0) / PER);
+      const w = windows[wi];
+      const idx = w.audio ? Math.floor((t - w.t0) / w.audio.dur * w.words.length)
+                          : Math.floor((t - w.t0) / PER);
       [...capEl.children].forEach((s, j) => { s.className = j < idx ? "said" : j === idx ? "on" : ""; });
     }
     let c = COL.ink;
     for (const k of colors) { if (k.t <= t + 1e-6) c = k.c; else break; }
     pBody.setAttribute("fill", c); pTip.setAttribute("fill", c);
     [...chapEl.children].forEach((li, i) => li.firstChild.classList.toggle("now", i === wi));
+    syncAudio(t, wi);
   }
+
+  // Keep the narration audio glued to the playhead. Steps without audio leave
+  // the element alone, so mixed lessons (some narrated, some not) just work.
+  // Audio URLs are repo-root-relative in the lesson data; AUDIO_BASE bridges
+  // the page to the root ("" for dist/*.html, "../" for player/index.html).
+  // data: URIs (inlined by build.mjs --inline-audio) are used as-is.
+  function audioURL(a) { return a.src.startsWith("data:") ? a.src : AUDIO_BASE + a.src; }
+  function syncAudio(t, wi) {
+    if (!audioEl) return;
+    const a = wi >= 0 ? windows[wi].audio : null;
+    const want = a ? audioURL(a) : null, cur = audioEl.getAttribute("data-src") || null;
+    if (want !== cur) {
+      audioEl.pause();
+      if (want) { audioEl.src = want; audioEl.setAttribute("data-src", want); }
+      else { audioEl.removeAttribute("src"); audioEl.setAttribute("data-src", ""); }
+    }
+    if (!a) return;
+    const off = Math.min(Math.max(t - windows[wi].t0, 0), a.dur);
+    // Paused, or sitting in the tail after the clip ended: never call play()
+    // on an ended element (per spec it seeks to 0 and replays the first
+    // syllable as a blip).
+    if (tl.paused() || off >= a.dur - 0.05) {
+      if (!audioEl.paused) audioEl.pause();
+      return;
+    }
+    // Touching currentTime clears a stale `ended` flag when seeking back
+    // into a finished clip; otherwise the audio would stay stuck silent.
+    if (audioEl.ended || Math.abs(audioEl.currentTime - off) > 0.35) {
+      try { audioEl.currentTime = off; } catch (e) {}
+    }
+    if (audioEl.paused) { audioEl.playbackRate = speed; audioEl.play().catch(() => {}); }
+  }
+  // UI handlers that don't move the playhead (pause button, replay) never
+  // trigger GSAP's onUpdate, so sync the audio explicitly there. Calling
+  // play() inside the click handler also satisfies iOS Safari's user-gesture
+  // requirement for audio.
+  function syncAudioNow() { if (tl) syncAudio(tl.time(), lastWin); }
 
   function addTab(L) {
     const b = document.createElement("button");
@@ -366,6 +413,8 @@ p.note{margin:0;font-size:12px;color:var(--muted)}
     svg = $("svg"); defs = svg.querySelector("defs"); world = $("world"); pencil = $("pencil"); pBody = $("pBody"); pTip = $("pTip");
     capEl = $("cap"); playB = $("play"); scrub = $("scrub"); speedB = $("speed"); chapEl = $("chapters");
     tabs = $("tabs"); jsonEl = $("json"); errEl = $("err");
+    audioEl = new Audio(); audioEl.preload = "auto";
+    AUDIO_BASE = opts.audioBase || "";
     LESSONS = (opts.lessons || []).map((L, i) => ({ ...L, id: L.id || "lesson" + (i + 1) }));
     tabs.innerHTML = "";
     LESSONS.forEach(addTab);
@@ -373,10 +422,11 @@ p.note{margin:0;font-size:12px;color:var(--muted)}
     playB.onclick = () => {
       if (tl.progress() === 1) tl.restart(); else tl.paused(!tl.paused());
       playB.textContent = tl.paused() ? "Play" : "Pause";
+      syncAudioNow();
     };
-    $("replay").onclick = () => { tl.restart(); playB.textContent = "Pause"; };
+    $("replay").onclick = () => { tl.restart(); playB.textContent = "Pause"; syncAudioNow(); };
     const speeds = [1, .5, 2]; let si = 0;
-    speedB.onclick = () => { si = (si + 1) % 3; speed = speeds[si]; tl.timeScale(speed); speedB.textContent = `Speed ${speed}×`; };
+    speedB.onclick = () => { si = (si + 1) % 3; speed = speeds[si]; tl.timeScale(speed); if (audioEl) audioEl.playbackRate = speed; speedB.textContent = `Speed ${speed}×`; };
     scrub.oninput = () => { tl.pause(); tl.progress(scrub.value / 1000); playB.textContent = "Play"; };
     $("run").onclick = () => {
       try {
@@ -414,11 +464,19 @@ p.note{margin:0;font-size:12px;color:var(--muted)}
 //  3. ../lessons/index.json manifest (needs http(s): run `npx serve .` or `python3 -m http.server` at the repo root)
 (async () => {
   let lessons = window.SKETCHBOARD_LESSONS;
+  // Where "audio/<id>/…" lives relative to this page: dist/*.html keeps it
+  // next door; the dev player reaches up to the repo root.
+  let audioBase = "";
   if (!lessons) {
     const q = new URLSearchParams(location.search);
     try {
-      if (q.get("src")) lessons = [await (await fetch(q.get("src"))).json()];
+      if (q.get("src")) {
+        const u = new URL(q.get("src"), location.href);
+        audioBase = new URL(u.pathname.slice(0, u.pathname.lastIndexOf("/") + 1) + "../", u).href;
+        lessons = [await (await fetch(u)).json()];
+      }
       else {
+        audioBase = "../";
         const files = await (await fetch("../lessons/index.json")).json();
         lessons = await Promise.all(files.map(f => fetch("../lessons/" + f).then(r => r.json())));
       }
@@ -427,7 +485,7 @@ p.note{margin:0;font-size:12px;color:var(--muted)}
       console.warn("Could not fetch lessons. Serve the repo over http, or open dist/sketchboard.html.", e);
     }
   }
-  Sketchboard.init({ lessons });
+  Sketchboard.init({ lessons, audioBase });
 })();
 </script>
 </body>

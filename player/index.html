@@ -82,11 +82,19 @@
 //  3. ../lessons/index.json manifest (needs http(s): run `npx serve .` or `python3 -m http.server` at the repo root)
 (async () => {
   let lessons = window.SKETCHBOARD_LESSONS;
+  // Where "audio/<id>/…" lives relative to this page: dist/*.html keeps it
+  // next door; the dev player reaches up to the repo root.
+  let audioBase = "";
   if (!lessons) {
     const q = new URLSearchParams(location.search);
     try {
-      if (q.get("src")) lessons = [await (await fetch(q.get("src"))).json()];
+      if (q.get("src")) {
+        const u = new URL(q.get("src"), location.href);
+        audioBase = new URL(u.pathname.slice(0, u.pathname.lastIndexOf("/") + 1) + "../", u).href;
+        lessons = [await (await fetch(u)).json()];
+      }
       else {
+        audioBase = "../";
         const files = await (await fetch("../lessons/index.json")).json();
         lessons = await Promise.all(files.map(f => fetch("../lessons/" + f).then(r => r.json())));
       }
@@ -95,7 +103,7 @@
       console.warn("Could not fetch lessons. Serve the repo over http, or open dist/sketchboard.html.", e);
     }
   }
-  Sketchboard.init({ lessons });
+  Sketchboard.init({ lessons, audioBase });
 })();
 </script>
 </body>

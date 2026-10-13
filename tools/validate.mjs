@@ -3,6 +3,12 @@
 // Usage: node tools/validate.mjs lessons/my-lesson.json [more.json ...]
 // Exit code 1 if any file has errors. Warnings never fail the run but should be read.
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { normalize, hashOf } from "./narrate.mjs";
+
+// Repo root, so audio paths resolve the same wherever the tool is run from.
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const W = 400, H = 500, PER = 0.34;
 const COLORS = ["ink", "blue", "orange", "green", "grey", "red", "soft", "paper", "yellow", "brown", "purple", "teal"];
@@ -52,6 +58,28 @@ export function validate(L) {
     if (words.length > 32) warn(w, `"say" has ${words.length} words; split the step (aim 8-25 words)`);
     if (/[–—]/.test(st.say || "")) warn(w, 'avoid dashes in "say"; captions are highlighted word by word');
     if (st.pause) pauses++;
+    let audioDur = 0;
+    if (st.audio !== undefined) {
+      if (!st.audio || typeof st.audio !== "object" || typeof st.audio.src !== "string" || !st.audio.src)
+        err(w, '"audio" must look like {"src": "audio/<id>/step-01-<hash>.mp3", "dur": 4.2}; run tools/narrate.mjs');
+      else if (!(typeof st.audio.dur === "number" && st.audio.dur > 0))
+        err(w, '"audio.dur" must be a positive number of seconds; run tools/narrate.mjs to stamp it');
+      else {
+        audioDur = st.audio.dur;
+        if (!st.audio.src.startsWith("data:") && !fs.existsSync(path.join(ROOT, st.audio.src)))
+          warn(w, `audio file "${st.audio.src}" not found; run tools/narrate.mjs`);
+        // Stale recording: "say" (or voice/speed) changed after narrating.
+        if (typeof st.audio.hash === "string" && L.narration) {
+          const want = hashOf(normalize(st.say || ""), L.narration.voice, L.narration.speed);
+          if (st.audio.hash !== want)
+            warn(w, `"say" changed since this step was narrated; re-run tools/narrate.mjs`);
+          else if (!st.audio.src.startsWith("data:") && !st.audio.src.endsWith(`-${st.audio.hash}.mp3`))
+            warn(w, `audio file "${st.audio.src}" is not the recording for this step's hash; re-run tools/narrate.mjs`);
+        } else if (st.audio.hash !== undefined && typeof st.audio.hash !== "string") {
+          err(w, '"audio.hash" must be a string; run tools/narrate.mjs to stamp it');
+        }
+      }
+    }
     if (st.do !== undefined && !Array.isArray(st.do)) { err(w, '"do" must be an array'); return; }
     let drawT = 0;
     (st.do || []).forEach((o, j) => {
@@ -88,8 +116,14 @@ export function validate(L) {
       else if (o.op === "clear") drawT += .5;
       else if (o.op !== "text") drawT += (o.dur || .7) + .25;
     });
-    const t = Math.max(drawT, words.length * PER + .35) + (st.hold ?? .25);
-    if (drawT > words.length * PER + 3) warn(w, `drawing (~${drawT.toFixed(1)}s) runs much longer than the narration (~${(words.length * PER).toFixed(1)}s); add words or split the step`);
+    const narrT = audioDur > 0 ? audioDur : words.length * PER;
+    const t = Math.max(drawT, narrT + .35) + (st.hold ?? .25);
+    // Two bars on purpose: without audio the "narration" is just caption
+    // highlighting, so a longer overrun is harmless. With real audio, the
+    // voice stopping while the pencil keeps drawing is audible dead air,
+    // so the bar is tighter.
+    if (!audioDur && drawT > words.length * PER + 3) warn(w, `drawing (~${drawT.toFixed(1)}s) runs much longer than the narration (~${(words.length * PER).toFixed(1)}s); add words or split the step`);
+    if (audioDur && drawT > audioDur + 1.5) warn(w, `drawing (~${drawT.toFixed(1)}s) runs longer than the narration audio (~${audioDur.toFixed(1)}s); the pencil will finish in silence`);
     total += t;
   });
   if (camS !== 1) warn("lesson", "camera is still zoomed at the end; add {op:\"cam\",x:200,y:250,s:1} to the last step");

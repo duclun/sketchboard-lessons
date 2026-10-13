@@ -49,15 +49,18 @@ Machine-readable schema: [`schema/lesson.schema.json`](../schema/lesson.schema.j
 | `do` | `[]` | Actions, drawn **one after another** in array order. |
 | `hold` | `0.25` | Extra seconds of stillness after the step. |
 | `pause` | `false` | When `true`, playback stops at the end of this step and the Play button reads **Continue**. Use it for predict / check-yourself moments. Scrubbing and chapter jumps never trigger it. |
+| `audio` | | `{"src": "audio/<id>/step-01-<hash>.mp3", "dur": 4.2, "hash": "…"}` — narration recording for this step, stamped by `tools/narrate.mjs`. `hash` covers the normalized text, voice and speed; the validator warns when `say` no longer matches it. When present, the step lasts as long as the recording and the caption highlights words across it. |
 | `notes` | | Ignored. |
 
 ### Step timing
 
 ```
-step length = max(time to draw every action, words × 0.34 + 0.35) + hold
+step length = max(time to draw every action, narration + 0.35) + hold
 ```
 
-So narration and drawing start together. If the drawing finishes first, the step waits for the words; if the words finish first, the step waits for the pencil. Aim for the two to be about equal: a 15-word line (~5 s) fits 3 to 6 drawing actions. The validator warns when drawing runs much longer than the words.
+where `narration` is `audio.dur` when the step has an `audio` recording, otherwise `words × 0.34`.
+
+So narration and drawing start together. If the drawing finishes first, the step waits for the voice; if the voice finishes first, the step waits for the pencil. Aim for the two to be about equal: a 15-word line (~5 s) fits 3 to 6 drawing actions. The validator warns when drawing runs much longer than the narration. `tools/narrate.mjs` measures real audio durations, so narrated lessons get exact timing instead of the 0.34 s/word estimate.
 
 Before every drawing action the pencil travels from where it is to the start of the new mark (0.12 to 0.4 s, by distance). Keep consecutive marks near each other and the lesson feels deliberate rather than jumpy.
 

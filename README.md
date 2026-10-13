@@ -24,10 +24,11 @@ Open the "Lesson as data" panel under the player to edit a lesson's JSON and re-
 ```bash
 cp templates/lesson-template.json lessons/my-topic.json   # or write a generator in scripts/
 # ...edit...
+node tools/narrate.mjs lessons/my-topic.json              # TTS narration per step -> audio/my-topic/step-NN-<hash>.mp3
 node tools/validate.mjs lessons/my-topic.json             # structure, bounds, pacing, pedagogy warnings
 npm install                                               # once: Playwright + GSAP for the render check
 node tools/check.mjs lessons/my-topic.json                # PNG of the board after every step -> checks/my-topic/
-node tools/build.mjs lessons/my-topic.json                # -> dist/my-topic.html
+node tools/build.mjs lessons/my-topic.json                # -> dist/my-topic.html (audio inlined; --no-inline-audio ships dist/audio/ instead)
 ```
 
 A lesson looks like this:
@@ -104,6 +105,6 @@ dist/                        built standalone lessons
 
 ## Known limits
 
-- No narration audio yet: the narration is a caption. Adding text-to-speech per step is the natural next step (the per-word timing is already there).
+- Narration audio is generated, not committed: run `node tools/narrate.mjs` to synthesize it (needs the `tts` CLI). Steps without audio fall back to the caption-only word estimate.
 - GSAP and Google Fonts load from CDNs, so a lesson needs an internet connection the first time.
 - Text width is estimated from character count, so check the rendered frames for long labels.
