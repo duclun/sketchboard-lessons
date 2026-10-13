@@ -254,11 +254,15 @@
     // Paused, or sitting in the tail after the clip ended: never call play()
     // on an ended element (per spec it seeks to 0 and replays the first
     // syllable as a blip).
-    if (tl.paused() || off >= a.dur - 0.05 || audioEl.ended) {
+    if (tl.paused() || off >= a.dur - 0.05) {
       if (!audioEl.paused) audioEl.pause();
       return;
     }
-    if (Math.abs(audioEl.currentTime - off) > 0.35) { try { audioEl.currentTime = off; } catch (e) {} }
+    // Touching currentTime clears a stale `ended` flag when seeking back
+    // into a finished clip; otherwise the audio would stay stuck silent.
+    if (audioEl.ended || Math.abs(audioEl.currentTime - off) > 0.35) {
+      try { audioEl.currentTime = off; } catch (e) {}
+    }
     if (audioEl.paused) { audioEl.playbackRate = speed; audioEl.play().catch(() => {}); }
   }
   // UI handlers that don't move the playhead (pause button, replay) never
